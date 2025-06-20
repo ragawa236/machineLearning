@@ -1,0 +1,325 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import accuracy_score, classification_report
+import warnings
+warnings.filterwarnings('ignore')
+
+class SimpleLearningStyleClassifier:
+    def __init__(self):
+        self.df = None
+        self.model = None
+        self.encoders = {}
+        
+    def load_data(self, file_path):
+        """Memuat data dari file CSV"""
+        try:
+            self.df = pd.read_csv(file_path)
+            print(f"✅ Data berhasil dimuat! Total mahasiswa: {len(self.df)}")
+            return True
+        except Exception as e:
+            print(f"❌ Error loading data: {e}")
+            return False
+    
+    def identify_learning_styles(self):
+        """Mengidentifikasi gaya belajar berdasarkan pola jawaban survey"""
+        learning_styles = []
+        
+        for idx, row in self.df.iterrows():
+            visual_score = 0
+            auditory_score = 0
+            kinesthetic_score = 0
+            
+            # Analisis setiap jawaban survey
+            responses = []
+            for col in self.df.columns:
+                if col not in ['Timestamp', 'Email', 'Nama', 'Asal Kampus', 'Prodi', 
+                              'Tanggal Lahir', 'Jenis Kelamin', 'Semester', 'Email Address']:
+                    if pd.notna(row[col]):
+                        responses.append(str(row[col]).lower())
+            
+            combined_response = ' '.join(responses)
+            
+            # Hitung skor berdasarkan kata kunci
+            # Visual indicators
+            visual_keywords = ['papan tulis', 'membaca', 'gambar', 'petunjuk', 'menonton', 
+                             'melihat', 'visual', 'seni rupa', 'ekspresi wajah', 'mencoret']
+            visual_score = sum(1 for keyword in visual_keywords if keyword in combined_response)
+            
+            # Auditory indicators  
+            auditory_keywords = ['mendengar', 'suara', 'musik', 'diskusi', 'berbicara', 
+                               'nada', 'radio', 'mengucapkan', 'keras', 'penjelasan']
+            auditory_score = sum(1 for keyword in auditory_keywords if keyword in combined_response)
+            
+            # Kinesthetic indicators
+            kinesthetic_keywords = ['praktek', 'praktikum', 'olahraga', 'fisik', 'gerakan', 
+                                  'berjalan', 'mengetuk', 'demonstrasi', 'tangan', 'berolahraga']
+            kinesthetic_score = sum(1 for keyword in kinesthetic_keywords if keyword in combined_response)
+            
+            # Tentukan gaya belajar dominan
+            scores = {
+                'Visual': visual_score,
+                'Auditory': auditory_score, 
+                'Kinesthetic': kinesthetic_score
+            }
+            
+            dominant_style = max(scores, key=scores.get)
+            
+            # Jika semua skor sama, gunakan heuristic sederhana
+            if visual_score == auditory_score == kinesthetic_score:
+                if 'a.' in combined_response:
+                    dominant_style = 'Visual'
+                elif 'b.' in combined_response:
+                    dominant_style = 'Auditory'
+                else:
+                    dominant_style = 'Kinesthetic'
+            
+            learning_styles.append(dominant_style)
+        
+        self.df['Gaya_Belajar'] = learning_styles
+        print("✅ Identifikasi gaya belajar selesai!")
+        return learning_styles
+    
+    def show_student_learning_styles(self):
+        """Menampilkan nama mahasiswa beserta gaya belajarnya"""
+        print("\n" + "="*60)
+        print("📋 DAFTAR MAHASISWA DAN GAYA BELAJARNYA")
+        print("="*60)
+        
+        for idx, row in self.df.iterrows():
+            nama = row['Nama']
+            gaya_belajar = row['Gaya_Belajar']
+            kampus = row['Asal Kampus'] if pd.notna(row['Asal Kampus']) else 'N/A'
+            prodi = row['Prodi'] if pd.notna(row['Prodi']) else 'N/A'
+            
+            # Emoji untuk setiap gaya belajar
+            emoji = {
+                'Visual': '👁️',
+                'Auditory': '👂', 
+                'Kinesthetic': '🤲'
+            }
+            
+            print(f"{idx+1:2d}. {nama:<25} | {emoji.get(gaya_belajar, '❓')} {gaya_belajar:<12} | {kampus}")
+        
+        print("="*60)
+    
+    def show_learning_style_counts(self):
+        """Menampilkan jumlah mahasiswa per gaya belajar"""
+        counts = self.df['Gaya_Belajar'].value_counts()
+        total = len(self.df)
+        
+        print("\n" + "="*50)
+        print("📊 STATISTIK GAYA BELAJAR MAHASISWA")
+        print("="*50)
+        
+        for style, count in counts.items():
+            percentage = (count/total) * 100
+            emoji = {'Visual': '👁️', 'Auditory': '👂', 'Kinesthetic': '🤲'}
+            print(f"{emoji.get(style, '❓')} {style:<12}: {count:2d} mahasiswa ({percentage:.1f}%)")
+        
+        print(f"\n📈 Total Mahasiswa: {total}")
+        print("="*50)
+        
+        return counts
+    
+    def plot_learning_style_distribution(self):
+        """Menampilkan grafik distribusi gaya belajar"""
+        plt.figure(figsize=(15, 10))
+        
+        # 1. Pie Chart
+        plt.subplot(2, 2, 1)
+        counts = self.df['Gaya_Belajar'].value_counts()
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+        plt.pie(counts.values, labels=counts.index, autopct='%1.1f%%', 
+                colors=colors, startangle=90, explode=(0.05, 0.05, 0.05))
+        plt.title('📊 Distribusi Gaya Belajar Mahasiswa', fontsize=14, fontweight='bold')
+        
+        # 2. Bar Chart
+        plt.subplot(2, 2, 2)
+        bars = plt.bar(counts.index, counts.values, color=colors, alpha=0.8)
+        plt.title('📈 Jumlah Mahasiswa per Gaya Belajar', fontsize=14, fontweight='bold')
+        plt.ylabel('Jumlah Mahasiswa')
+        plt.xlabel('Gaya Belajar')
+        
+        # Tambahkan nilai di atas bar
+        for bar, value in zip(bars, counts.values):
+            plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, 
+                    str(value), ha='center', va='bottom', fontweight='bold')
+        
+        # 3. Distribusi berdasarkan Jenis Kelamin
+        plt.subplot(2, 2, 3)
+        gender_style = pd.crosstab(self.df['Jenis Kelamin'], self.df['Gaya_Belajar'])
+        gender_style.plot(kind='bar', ax=plt.gca(), color=colors)
+        plt.title('👥 Gaya Belajar berdasarkan Jenis Kelamin', fontsize=12, fontweight='bold')
+        plt.xlabel('Jenis Kelamin')
+        plt.ylabel('Jumlah Mahasiswa')
+        plt.xticks(rotation=0)
+        plt.legend(title='Gaya Belajar')
+        
+        # 4. Distribusi berdasarkan Semester
+        plt.subplot(2, 2, 4)
+        semester_style = pd.crosstab(self.df['Semester'], self.df['Gaya_Belajar'])
+        semester_style.plot(kind='bar', ax=plt.gca(), color=colors)
+        plt.title('🎓 Gaya Belajar berdasarkan Semester', fontsize=12, fontweight='bold')
+        plt.xlabel('Semester')
+        plt.ylabel('Jumlah Mahasiswa')
+        plt.legend(title='Gaya Belajar')
+        
+        plt.tight_layout()
+        plt.show()
+    
+    def train_prediction_model(self):
+        """Melatih model untuk prediksi gaya belajar mahasiswa baru"""
+        print("\n🤖 Melatih model Machine Learning...")
+        
+        # Pilih fitur untuk training
+        feature_columns = ['Jenis Kelamin', 'Semester']
+        
+        # Encode categorical features
+        X = pd.DataFrame()
+        for col in feature_columns:
+            if col in self.df.columns:
+                le = LabelEncoder()
+                X[col] = le.fit_transform(self.df[col].fillna('Unknown'))
+                self.encoders[col] = le
+        
+        y = self.df['Gaya_Belajar']
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+        
+        # Train model
+        self.model = RandomForestClassifier(n_estimators=100, random_state=42)
+        self.model.fit(X_train, y_train)
+        
+        # Evaluate
+        y_pred = self.model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        
+        print(f"✅ Model berhasil dilatih dengan akurasi: {accuracy:.2f}")
+        return accuracy
+    
+    def predict_new_student(self, jenis_kelamin, semester):
+        """Prediksi gaya belajar untuk mahasiswa baru"""
+        if self.model is None:
+            print("❌ Model belum dilatih! Jalankan train_prediction_model() terlebih dahulu.")
+            return None
+        
+        try:
+            # Encode input
+            gender_encoded = self.encoders['Jenis Kelamin'].transform([jenis_kelamin])[0]
+            semester_encoded = semester
+            
+            # Predict
+            prediction = self.model.predict([[gender_encoded, semester_encoded]])[0]
+            probabilities = self.model.predict_proba([[gender_encoded, semester_encoded]])[0]
+            
+            # Get class names
+            classes = self.model.classes_
+            prob_dict = dict(zip(classes, probabilities))
+            
+            print(f"\n🔮 PREDIKSI GAYA BELAJAR")
+            print(f"👤 Jenis Kelamin: {jenis_kelamin}")
+            print(f"📚 Semester: {semester}")
+            print(f"📊 Prediksi: {prediction}")
+            print(f"📈 Probabilitas:")
+            for style, prob in prob_dict.items():
+                emoji = {'Visual': '👁️', 'Auditory': '👂', 'Kinesthetic': '🤲'}
+                print(f"   {emoji.get(style, '❓')} {style}: {prob:.2f}")
+            
+            return prediction, prob_dict
+            
+        except Exception as e:
+            print(f"❌ Error dalam prediksi: {e}")
+            return None
+    
+    def generate_recommendations(self):
+        """Generate rekomendasi pembelajaran berdasarkan gaya belajar"""
+        print("\n" + "="*70)
+        print("💡 REKOMENDASI STRATEGI PEMBELAJARAN")
+        print("="*70)
+        
+        recommendations = {
+            'Visual': [
+                "📊 Gunakan diagram, grafik, dan infografis",
+                "🎨 Buat mind map dan flowchart", 
+                "📺 Sediakan video pembelajaran",
+                "📝 Berikan handout dengan visual menarik",
+                "🖼️ Gunakan gambar dan ilustrasi dalam penjelasan"
+            ],
+            'Auditory': [
+                "🎵 Integrasikan musik dalam pembelajaran",
+                "💬 Perbanyak diskusi kelompok",
+                "🎙️ Gunakan podcast dan audio pembelajaran", 
+                "👥 Lakukan presentasi dan ceramah",
+                "🔊 Berikan penjelasan verbal yang jelas"
+            ],
+            'Kinesthetic': [
+                "🏃 Lakukan aktivitas fisik dan permainan",
+                "🔬 Perbanyak praktikum dan eksperimen",
+                "🤝 Gunakan role playing dan simulasi",
+                "✋ Belajar sambil bergerak (walking meeting)",
+                "🛠️ Sediakan alat peraga dan manipulatif"
+            ]
+        }
+        
+        counts = self.df['Gaya_Belajar'].value_counts()
+        
+        for style, count in counts.items():
+            emoji = {'Visual': '👁️', 'Auditory': '👂', 'Kinesthetic': '🤲'}
+            print(f"\n{emoji.get(style, '❓')} {style.upper()} ({count} mahasiswa):")
+            for rec in recommendations[style]:
+                print(f"   • {rec}")
+        
+        print("="*70)
+    
+    def run_analysis(self):
+        """Menjalankan analisis lengkap"""
+        print("🚀 MEMULAI ANALISIS GAYA BELAJAR MAHASISWA")
+        print("="*60)
+        
+        # 1. Identifikasi gaya belajar
+        self.identify_learning_styles()
+        
+        # 2. Tampilkan daftar mahasiswa
+        self.show_student_learning_styles()
+        
+        # 3. Tampilkan statistik
+        self.show_learning_style_counts()
+        
+        # 4. Tampilkan grafik
+        self.plot_learning_style_distribution()
+        
+        # 5. Latih model prediksi
+        self.train_prediction_model()
+        
+        # 6. Generate rekomendasi
+        self.generate_recommendations()
+        
+        print("\n✅ ANALISIS SELESAI!")
+
+# Contoh penggunaan
+def main():
+    # Inisialisasi classifier
+    classifier = SimpleLearningStyleClassifier()
+    
+    # Load data (ganti dengan path file Anda)
+    file_path = "SURVEY GAYA BELAJAR SISWA (Jawaban) - Form Responses 1.csv"
+    
+    if classifier.load_data(file_path):
+        # Jalankan analisis lengkap
+        classifier.run_analysis()
+        
+        # Contoh prediksi mahasiswa baru
+        # print("\n" + "="*50)
+        # print("🔮 CONTOH PREDIKSI MAHASISWA BARU")
+        # print("="*50)
+        # classifier.predict_new_student("Laki-laki", 4)
+        # classifier.predict_new_student("Perempuan", 2)
+
+if __name__ == "__main__":
+    main()
