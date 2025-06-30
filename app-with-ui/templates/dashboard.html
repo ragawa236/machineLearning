@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Gaya Belajar</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #f4f7f9; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: auto; }
+        .card { background-color: white; border-radius: 12px; padding: 24px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+        h1, h2 { color: #2c3e50; text-align: center; }
+        a.nav-link { color: #3498db; text-decoration: none; display: inline-block; margin-bottom: 20px; font-weight: bold; }
+        a.nav-link:hover { text-decoration: underline; }
+        
+        /* Layout untuk persentase */
+        .summary-grid { display: flex; justify-content: space-around; text-align: center; flex-wrap: wrap; }
+        .summary-item { padding: 20px; min-width: 150px; }
+        .summary-item .percentage { font-size: 2.5em; font-weight: bold; }
+        .summary-item .label { font-size: 1.1em; color: #7f8c8d; }
+        .visual .percentage { color: #3498db; }
+        .auditory .percentage { color: #e74c3c; }
+        .kinesthetic .percentage { color: #2ecc71; }
+
+        /* Layout untuk grafik */
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
+        .chart-container { position: relative; width: 100%; }
+
+        /* Tabel */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #dfe1e5; text-align: left; }
+        thead { background-color: #ecf0f1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="nav-link">&larr; Kembali ke Pencarian</a>
+        <h1>Dashboard Analisis Gaya Belajar</h1>
+
+        <div class="card">
+            <h2>Ringkasan Distribusi</h2>
+            <div class="summary-grid">
+                <div class="summary-item visual">
+                    <div class="percentage">{{ percentages.get('Visual', 0) }}%</div>
+                    <div class="label">Visual 👁️</div>
+                </div>
+                <div class="summary-item auditory">
+                    <div class="percentage">{{ percentages.get('Auditory', 0) }}%</div>
+                    <div class="label">Auditory 👂</div>
+                </div>
+                <div class="summary-item kinesthetic">
+                    <div class="percentage">{{ percentages.get('Kinesthetic', 0) }}%</div>
+                    <div class="label">Kinesthetic 🤲</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="card">
+                <h2>Jumlah per Gaya Belajar</h2>
+                <div class="chart-container">
+                    <canvas id="overallChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Distribusi per Jenis Kelamin</h2>
+                <div class="chart-container">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h2>Distribusi per Semester</h2>
+                <div class="chart-container">
+                    <canvas id="semesterChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Data Lengkap Mahasiswa</h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No.</th> <th>Nama</th> <th>Asal Kampus</th> <th>Prodi</th> <th>Semester</th> <th>Gaya Belajar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ student.Nama }}</td>
+                            <td>{{ student['Asal Kampus'] }}</td>
+                            <td>{{ student.Prodi }}</td>
+                            <td>{{ student.Semester }}</td>
+                            <td><strong>{{ student.Gaya_Belajar_Teridentifikasi }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data dari Flask
+        const overallData = {{ overall_dist|tojson|safe }};
+        const genderData = {{ gender_data|tojson|safe }};
+        const semesterData = {{ semester_data|tojson|safe }};
+
+        // Fungsi bantuan untuk membuat chart
+        function createBarChart(ctx, chartType, labels, datasets, titleText, isStacked = false) {
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: datasets.length > 1 },
+                        title: { display: true, text: titleText }
+                    },
+                    scales: {
+                        x: { stacked: isStacked },
+                        y: { stacked: isStacked, beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // 1. Grafik Jumlah Total Gaya Belajar
+        const overallCtx = document.getElementById('overallChart');
+        if (overallCtx) {
+            createBarChart(overallCtx, 'bar', Object.keys(overallData), [{
+                label: 'Jumlah Mahasiswa',
+                data: Object.values(overallData),
+                backgroundColor: ['#3498db', '#e74c3c', '#2ecc71']
+            }], 'Total Mahasiswa per Gaya Belajar');
+        }
+
+        // 2. Grafik Berdasarkan Jenis Kelamin (Stacked)
+        const genderCtx = document.getElementById('genderChart');
+        if (genderCtx && genderData.labels) {
+            createBarChart(genderCtx, 'bar', genderData.labels, genderData.datasets, 'Gaya Belajar Berdasarkan Jenis Kelamin', true);
+        }
+
+        // 3. Grafik Berdasarkan Semester (Stacked)
+        const semesterCtx = document.getElementById('semesterChart');
+        if (semesterCtx && semesterData.labels) {
+            createBarChart(semesterCtx, 'bar', semesterData.labels, semesterData.datasets, 'Gaya Belajar Berdasarkan Semester', true);
+        }
+    </script>
+</body>
+</html>

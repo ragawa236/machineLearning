@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pencarian Gaya Belajar</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f8f9fa; }
+        .search-container { text-align: center; }
+        .logo { font-size: 48px; font-weight: bold; color: #4285F4; }
+        .search-bar { width: 500px; padding: 12px 20px; margin: 20px 0; border-radius: 24px; border: 1px solid #dfe1e5; font-size: 16px; }
+        .search-bar:hover, .search-bar:focus { box-shadow: 0 1px 6px rgba(32,33,36,.28); border-color: rgba(223,225,229,0); outline: none; }
+        .btn { background-color: #f8f9fa; border: 1px solid #f8f9fa; border-radius: 4px; color: #3c4043; font-size: 14px; margin: 11px 4px; padding: 10px 16px; cursor: pointer; }
+        .btn:hover { border: 1px solid #c6c6c6; box-shadow: 0 1px 1px rgba(0,0,0,.1); }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <h1 class="logo">Pencarian Gaya Belajar</h1>
+        <p>Masukkan nama mahasiswa untuk mengetahui gaya belajarnya.</p>
+            <form action="/search" method="post">
+                <input type="text" name="query" class="search-bar" placeholder="Ketik nama mahasiswa..." autofocus>
+                <br>
+                <button type="submit" class="btn">Cari Data</button>
+                <a href="/dashboard" class="btn">Lihat Dashboard</a>
+            </form>
+    </div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Pencarian</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #f8f9fa; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        .card { background-color: white; border: 1px solid #dfe1e5; border-radius: 8px; padding: 24px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .card h2 { margin-top: 0; color: #1a0dab; }
+        .card p { line-height: 1.6; color: #3c4043; }
+        .card .highlight { font-size: 1.5em; font-weight: bold; color: #d93025; margin-top: 10px; }
+        .not-found { color: #70757a; }
+        a { color: #1a0dab; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <p><a href="/">&larr; Kembali ke Pencarian</a></p>
+        <h1>Hasil Pencarian untuk: "<em>{{ query }}</em>"</h1>
+
+        {% if student %}
+            <div class="card">
+                <h2>{{ student.Nama }}</h2>
+                <p>
+                    <strong>Asal Kampus:</strong> {{ student['Asal Kampus'] }} <br>
+                    <strong>Program Studi:</strong> {{ student.Prodi }} <br>
+                    <strong>Semester:</strong> {{ student.Semester }}
+                </p>
+                <hr>
+                <p>Hasil Analisis Gaya Belajar:</p>
+                <p class="highlight">{{ student.emoji }} {{ student.Gaya_Belajar_Teridentifikasi }}</p>
+            </div>
+        {% else %}
+            <div class="card">
+                <p class="not-found">Maaf, data untuk mahasiswa dengan nama yang mengandung "<strong>{{ query }}</strong>" tidak ditemukan. Silakan coba kata kunci lain.</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
